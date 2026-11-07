@@ -22,7 +22,7 @@ jobs:
 
       - name: Clone ImmortalWrt source
         run: |
-          git clone https://github.com/padavanonly/immortalwrt.git openwrt
+          git clone https://github.com/padavanonly/immortalwrt-mt798x-6.6.git openwrt
           cd openwrt
           # 如需固定分支或者commit，取消下一行注释填写
           # git checkout main
