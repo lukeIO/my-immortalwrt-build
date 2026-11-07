@@ -28,11 +28,11 @@ jobs:
           # git checkout main
           cd ..
 
-      # ========= 修改点：使用源码内 defconfig/mt7986-ax6000-dae.config 作为配置 =========
+      # ========= 修改点：使用源码内 defconfig/mt7986-ax6000_dae.config 作为配置 =========
       - name: Apply defconfig mt7986-ax6000-dae.config
         run: |
           cd openwrt
-          cp defconfig/mt7986-ax6000-dae.config .config
+          cp defconfig/mt7986-ax6000_dae.config .config
 
       - name: Update & install feeds
         run: |
