@@ -1,0 +1,91 @@
+name: Build ImmortalWrt AX6000
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout config and workflow
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache cmake cpio curl device-tree-compiler flex gawk gettext gcc-multilib g++-multilib \
+          git gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev \
+          libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool \
+          libyaml-dev lrzsz mkisofs msmtp ninja-build p7zip p7zip-full pkgconf python3 python3-pip python3-ply \
+          python3-docutils qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl \
+          unzip vim wget xmlto xxd zlib1g-dev zstd
+
+      - name: Clone ImmortalWrt source
+        run: |
+          git clone https://github.com/padavanonly/immortalwrt.git openwrt
+          cd openwrt
+          # 这里可以按需指定分支或者commit
+          # git checkout main
+          cd ..
+
+      - name: Copy .config
+        run: cp .config openwrt/.config
+
+      - name: Update & install feeds
+        run: |
+          cd openwrt
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Cache toolchain
+        uses: actions/cache@v4
+        with:
+          path: openwrt/staging_dir
+          key: ${{ runner.os }}-immortalwrt-ax6000-${{ hashFiles('.config') }}
+          restore-keys: |
+            ${{ runner.os }}-immortalwrt-ax6000-
+
+      - name: Download source packages
+        run: |
+          cd openwrt
+          ./scripts/feeds list -i
+          make -j$(nproc) download
+
+      - name: Compile firmware
+        run: |
+          cd openwrt
+          make -j$(nproc) 2>&1 || {
+            echo "并行编译失败，切换单线程V=s重试"
+            make -j1 V=s
+          }
+
+      - name: Upload to Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AX6000-firmware
+          path: openwrt/bin/targets/
+          retention-days: 7
+
+      # ========== 新增：清理旧Release，只保留最近3个 ==========
+      - name: Delete old releases, keep latest 3
+        uses: dev-drprasad/delete-older-releases@v0.3.0
+        if: success()
+        with:
+          keep_latest: 3
+          delete_tags: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate release tag & publish
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: "build-${{ github.sha }}"
+          name: "ImmortalWrt AX6000 Build ${{ github.sha }}"
+          body: |
+            自动编译发布
+            源码仓库: https://github.com/padavanonly/immortalwrt
+            提交哈希: ${{ github.sha }}
+          files: |
+            openwrt/bin/targets/**/*.bin
+            openwrt/bin/targets/**/*.img
