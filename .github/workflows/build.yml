@@ -24,12 +24,15 @@ jobs:
         run: |
           git clone https://github.com/padavanonly/immortalwrt.git openwrt
           cd openwrt
-          # 这里可以按需指定分支或者commit
+          # 如需固定分支或者commit，取消下一行注释填写
           # git checkout main
           cd ..
 
-      - name: Copy .config
-        run: cp .config openwrt/.config
+      # ========= 修改点：使用源码内 defconfig/mt7986-ax6000-dae.config 作为配置 =========
+      - name: Apply defconfig mt7986-ax6000-dae.config
+        run: |
+          cd openwrt
+          cp defconfig/mt7986-ax6000-dae.config .config
 
       - name: Update & install feeds
         run: |
@@ -41,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: openwrt/staging_dir
-          key: ${{ runner.os }}-immortalwrt-ax6000-${{ hashFiles('.config') }}
+          key: ${{ runner.os }}-immortalwrt-ax6000-${{ hashFiles('openwrt/defconfig/mt7986-ax6000-dae.config') }}
           restore-keys: |
             ${{ runner.os }}-immortalwrt-ax6000-
 
@@ -66,7 +69,6 @@ jobs:
           path: openwrt/bin/targets/
           retention-days: 7
 
-      # ========== 新增：清理旧Release，只保留最近3个 ==========
       - name: Delete old releases, keep latest 3
         uses: dev-drprasad/delete-older-releases@v0.3.0
         if: success()
@@ -81,9 +83,10 @@ jobs:
         if: success()
         with:
           tag_name: "build-${{ github.sha }}"
-          name: "ImmortalWrt AX6000 Build ${{ github.sha }}"
+          name: "ImmortalWrt AX6000 DAE Build ${{ github.sha }}"
           body: |
             自动编译发布
+            配置文件：defconfig/mt7986-ax6000-dae.config
             源码仓库: https://github.com/padavanonly/immortalwrt
             提交哈希: ${{ github.sha }}
           files: |
