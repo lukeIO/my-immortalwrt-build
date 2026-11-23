@@ -1,4 +1,4 @@
-name: Build ImmortalWrt AX6000
+name: Build ImmortalWrt to redmi AX6000
 
 on:
   workflow_dispatch:
@@ -22,14 +22,7 @@ jobs:
       - name: Apply AX6000 defconfig
         run: |
           cd openwrt
-          CONFIG_FILE="defconfig/mt7986-ax6000_dae.config"
-          if [ ! -f "$CONFIG_FILE" ]; then
-            echo "未找到配置文件：$CONFIG_FILE"
-            echo "可用配置："
-            find defconfig -maxdepth 1 -type f -name "*ax6000*" -print
-            exit 1
-          fi
-          cp -f "$CONFIG_FILE" .config
+          cp defconfig/mt7986-ax6000_dae.config .config
           make defconfig
 
       - name: Update and install feeds
@@ -39,17 +32,6 @@ jobs:
           ./scripts/feeds install -a
           make defconfig
 
-      - name: Cache toolchain
-        uses: actions/cache@v4
-        with:
-          path: |
-            openwrt/staging_dir
-            openwrt/build_dir
-            openwrt/dl
-          key: ${{ runner.os }}-immortalwrt-ax6000-${{ hashFiles('openwrt/defconfig/mt7986-ax6000.config') }}
-          restore-keys: |
-            ${{ runner.os }}-immortalwrt-ax6000-
-
       - name: Download source packages
         run: |
           cd openwrt
@@ -58,10 +40,20 @@ jobs:
       - name: Compile firmware
         run: |
           cd openwrt
-          make -j$(nproc) 2>&1 || {
-            echo "并行编译失败，切换为单线程详细编译"
-            make -j1 V=s
+          rm -f build.log
+          make -j$(nproc) >> build.log 2>&1 || {
+            echo "===== 并行编译失败，切换为单线程详细编译 =====" >> build.log
+            make -j1 V=s >> build.log 2>&1
           }
+
+      - name: Upload build log (only when failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AX6000-build-log-${{ github.run_id }}
+          path: openwrt/build.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload firmware artifacts
         uses: actions/upload-artifact@v4
@@ -79,7 +71,7 @@ jobs:
           name: ImmortalWrt AX6000 Build ${{ github.sha }}
           body: |
             自动编译发布
-            配置文件：defconfig/mt7986-ax6000.config
+            配置文件：defconfig/mt7986-ax6000_dae.config
             源码仓库：https://github.com/padavanonly/immortalwrt-mt798x-6.6
             提交哈希：${{ github.sha }}
           files: |
