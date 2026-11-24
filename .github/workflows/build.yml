@@ -57,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: AX6000-firmware
-          path: openwrt/bin/targets/
+          path: openwrt/bin/targets/mediatek/filogic/*
           if-no-files-found: error
           retention-days: 7
 
@@ -73,11 +73,7 @@ jobs:
             源码仓库：https://github.com/padavanonly/immortalwrt-mt798x-6.6
             提交哈希：${{ github.sha }}
           files: |
-            openwrt/bin/targets/**/*.bin
-            openwrt/bin/targets/**/*.itb
-            openwrt/bin/targets/**/*.ubi
-            openwrt/bin/targets/**/*.fip
-            openwrt/bin/targets/**/*.tar.gz
+           openwrt/bin/targets/mediatek/filogic/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
