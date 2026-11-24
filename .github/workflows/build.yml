@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install build dependencies
         run: |
@@ -46,7 +46,7 @@ jobs:
           }
 
       - name: Upload build log
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AX6000-build-log-${{ github.run_id }}
           path: openwrt/build.log
@@ -54,7 +54,7 @@ jobs:
           retention-days: 7
 
       - name: Upload firmware artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AX6000-firmware
           path: openwrt/bin/targets/
@@ -62,7 +62,7 @@ jobs:
           retention-days: 7
 
       - name: Generate release tag and publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: success()
         with:
           tag_name: build-${{ github.sha }}
@@ -74,7 +74,9 @@ jobs:
             提交哈希：${{ github.sha }}
           files: |
             openwrt/bin/targets/**/*.bin
-            openwrt/bin/targets/**/*.img
+            openwrt/bin/targets/**/*.itb
+            openwrt/bin/targets/**/*.ubi
+            openwrt/bin/targets/**/*.fip
             openwrt/bin/targets/**/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -88,3 +90,5 @@ jobs:
           repo: ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
